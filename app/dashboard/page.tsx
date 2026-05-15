@@ -19,7 +19,7 @@ export default function DashboardPage() {
     pendingApplications: 0,
     approvedApplications: 0,
   });
-  const [applications, setApplications] = useState([]);
+  const [applications, setApplications] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {

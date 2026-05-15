@@ -20,7 +20,7 @@ const PRIORITY_COLORS: any = {
 
 export default function MaintenancePage() {
   const { data: session } = useSession();
-  const [tickets, setTickets] = useState([]);
+  const [tickets, setTickets] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [filter, setFilter] = useState("");
   const [updating, setUpdating] = useState<string | null>(null);

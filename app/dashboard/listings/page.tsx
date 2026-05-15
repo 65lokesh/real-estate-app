@@ -6,7 +6,7 @@ import Link from "next/link";
 
 export default function MyListingsPage() {
   const { data: session } = useSession();
-  const [listings, setListings] = useState([]);
+  const [listings, setListings] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {

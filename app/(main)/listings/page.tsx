@@ -4,7 +4,7 @@ import { useEffect, useState } from "react";
 import ListingCard from "@/components/listings/ListingCard";
 
 export default function ListingsPage() {
-  const [listings, setListings] = useState([]);
+  const [listings, setListings] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [filters, setFilters] = useState({
     type: "",

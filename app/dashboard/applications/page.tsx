@@ -12,7 +12,7 @@ const STATUS_COLORS: any = {
 
 export default function ApplicationsPage() {
   const { data: session } = useSession();
-  const [applications, setApplications] = useState([]);
+  const [applications, setApplications] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [updating, setUpdating] = useState<string | null>(null);
 

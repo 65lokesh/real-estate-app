@@ -1,5 +1,6 @@
 "use client";
 
+import { Suspense } from "react";
 import { useEffect, useState } from "react";
 import { useSearchParams } from "next/navigation";
 
@@ -16,8 +17,8 @@ const STATUS_COLORS: any = {
   REFUNDED: "bg-gray-100 text-gray-600",
 };
 
-export default function PaymentsPage() {
-  const [payments, setPayments] = useState([]);
+function PaymentsPage() {
+  const [payments, setPayments] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [paying, setPaying] = useState(false);
   const searchParams = useSearchParams();
@@ -34,7 +35,6 @@ export default function PaymentsPage() {
 
   useEffect(() => {
     fetchPayments();
-    // Load Razorpay script
     const script = document.createElement("script");
     script.src = "https://checkout.razorpay.com/v1/checkout.js";
     document.body.appendChild(script);
@@ -59,7 +59,6 @@ export default function PaymentsPage() {
         description: type === "DEPOSIT" ? "Security Deposit" : "Monthly Rent",
         order_id: data.orderId,
         handler: async (response: any) => {
-          // Payment successful
           await fetch("/api/payments/verify", {
             method: "POST",
             headers: { "Content-Type": "application/json" },
@@ -102,14 +101,11 @@ export default function PaymentsPage() {
           </div>
         )}
 
-        {/* Quick Pay Cards */}
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-8">
           <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-6">
             <p className="text-2xl mb-2">🏠</p>
             <h3 className="font-bold text-gray-800 mb-1">Pay Monthly Rent</h3>
-            <p className="text-xs text-gray-400 mb-4">
-              Test mode — use card 4111 1111 1111 1111
-            </p>
+            <p className="text-xs text-gray-400 mb-4">Test mode</p>
             <button
               onClick={() => handlePayment(10000, "RENT")}
               disabled={paying}
@@ -122,9 +118,7 @@ export default function PaymentsPage() {
           <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-6">
             <p className="text-2xl mb-2">🔐</p>
             <h3 className="font-bold text-gray-800 mb-1">Pay Security Deposit</h3>
-            <p className="text-xs text-gray-400 mb-4">
-              One-time deposit — refundable on exit
-            </p>
+            <p className="text-xs text-gray-400 mb-4">One-time deposit</p>
             <button
               onClick={() => handlePayment(50000, "DEPOSIT")}
               disabled={paying}
@@ -135,7 +129,6 @@ export default function PaymentsPage() {
           </div>
         </div>
 
-        {/* Payment History */}
         <div className="bg-white rounded-2xl border border-gray-100 shadow-sm overflow-hidden">
           <div className="px-6 py-4 border-b border-gray-100">
             <h2 className="font-bold text-gray-800">Payment History</h2>
@@ -147,9 +140,7 @@ export default function PaymentsPage() {
             <div className="p-16 text-center">
               <p className="text-4xl mb-3">💳</p>
               <h3 className="text-lg font-semibold text-gray-700">No payments yet</h3>
-              <p className="text-gray-400 text-sm mt-1">
-                Make your first payment above
-              </p>
+              <p className="text-gray-400 text-sm mt-1">Make your first payment above</p>
             </div>
           ) : (
             <table className="w-full text-sm">
@@ -187,5 +178,13 @@ export default function PaymentsPage() {
         </div>
       </div>
     </div>
+  );
+}
+
+export default function PaymentsPageWrapper() {
+  return (
+    <Suspense fallback={<div className="p-8 text-center text-gray-400">Loading...</div>}>
+      <PaymentsPage />
+    </Suspense>
   );
 }

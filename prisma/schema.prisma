@@ -1,0 +1,329 @@
+// cat > prisma/schema.prisma << 'EOF'
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url = env("DATABASE_URL")
+}
+
+enum Role {
+  RENTER
+  LANDLORD
+  AGENT
+  ADMIN
+}
+
+enum PropertyType {
+  APARTMENT
+  HOUSE
+  VILLA
+  STUDIO
+  COMMERCIAL
+}
+
+enum ListingType {
+  RENT
+  SALE
+}
+
+enum ListingStatus {
+  AVAILABLE
+  RENTED
+  SOLD
+  PAUSED
+  DELETED
+}
+
+enum ApplicationStatus {
+  PENDING
+  APPROVED
+  REJECTED
+  WITHDRAWN
+}
+
+enum LeaseStatus {
+  DRAFT
+  ACTIVE
+  EXPIRED
+  TERMINATED
+}
+
+enum PaymentType {
+  RENT
+  DEPOSIT
+  LATE_FEE
+  MAINTENANCE_FEE
+}
+
+enum PaymentStatus {
+  PENDING
+  COMPLETED
+  FAILED
+  REFUNDED
+}
+
+enum MaintenancePriority {
+  LOW
+  MEDIUM
+  HIGH
+  URGENT
+}
+
+enum MaintenanceStatus {
+  OPEN
+  IN_PROGRESS
+  RESOLVED
+  CLOSED
+}
+
+enum TourType {
+  IN_PERSON
+  VIDEO_CALL
+}
+
+enum TourStatus {
+  REQUESTED
+  CONFIRMED
+  COMPLETED
+  CANCELLED
+}
+
+model User {
+  id            String    @id @default(cuid())
+  email         String    @unique
+  password      String?
+  name          String
+  phone         String?
+  role          Role      @default(RENTER)
+  avatar        String?
+  isVerified    Boolean   @default(false)
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+
+  properties         Property[]
+  applications       Application[]
+  tenantLeases       Lease[]            @relation("TenantLeases")
+  landlordLeases     Lease[]            @relation("LandlordLeases")
+  payments           Payment[]
+  maintenanceTickets MaintenanceTicket[]
+  toursRequested     Tour[]             @relation("TourRequester")
+  toursAsLandlord    Tour[]             @relation("TourLandlord")
+  sentMessages       Message[]
+  notifications      Notification[]
+  savedListings      SavedListing[]
+  reviews            Review[]
+  leaseSignatures    LeaseSignature[]
+  conversations      Conversation[]
+}
+
+model Property {
+  id          String       @id @default(cuid())
+  ownerId     String
+  owner       User         @relation(fields: [ownerId], references: [id])
+  title       String
+  description String
+  address     String
+  city        String
+  state       String
+  zipCode     String
+  lat         Float?
+  lng         Float?
+  type        PropertyType
+  createdAt   DateTime     @default(now())
+  updatedAt   DateTime     @updatedAt
+
+  listings           Listing[]
+  maintenanceTickets MaintenanceTicket[]
+}
+
+model Listing {
+  id            String        @id @default(cuid())
+  propertyId    String
+  property      Property      @relation(fields: [propertyId], references: [id])
+  type          ListingType
+  price         Float
+  bedrooms      Int
+  bathrooms     Int
+  areaSqFt      Float?
+  status        ListingStatus @default(AVAILABLE)
+  availableFrom DateTime?
+  isFeatured    Boolean       @default(false)
+  createdAt     DateTime      @default(now())
+  updatedAt     DateTime      @updatedAt
+
+  photos        Photo[]
+  amenities     Amenity[]
+  applications  Application[]
+  tours         Tour[]
+  savedBy       SavedListing[]
+  reviews       Review[]
+  conversations Conversation[]
+}
+
+model Photo {
+  id        String   @id @default(cuid())
+  listingId String
+  listing   Listing  @relation(fields: [listingId], references: [id])
+  url       String
+  publicId  String
+  isPrimary Boolean  @default(false)
+  order     Int      @default(0)
+  createdAt DateTime @default(now())
+}
+
+model Amenity {
+  id        String  @id @default(cuid())
+  listingId String
+  listing   Listing @relation(fields: [listingId], references: [id])
+  name      String
+}
+
+model Application {
+  id            String            @id @default(cuid())
+  listingId     String
+  listing       Listing           @relation(fields: [listingId], references: [id])
+  applicantId   String
+  applicant     User              @relation(fields: [applicantId], references: [id])
+  status        ApplicationStatus @default(PENDING)
+  monthlyIncome Float?
+  employerName  String?
+  message       String?
+  creditConsent Boolean           @default(false)
+  createdAt     DateTime          @default(now())
+  updatedAt     DateTime          @updatedAt
+}
+
+model Lease {
+  id            String      @id @default(cuid())
+  propertyId    String
+  tenantId      String
+  tenant        User        @relation("TenantLeases", fields: [tenantId], references: [id])
+  landlordId    String
+  landlord      User        @relation("LandlordLeases", fields: [landlordId], references: [id])
+  startDate     DateTime
+  endDate       DateTime
+  monthlyRent   Float
+  depositAmount Float
+  status        LeaseStatus @default(DRAFT)
+  pdfUrl        String?
+  createdAt     DateTime    @default(now())
+  updatedAt     DateTime    @updatedAt
+
+  signatures LeaseSignature[]
+  payments   Payment[]
+}
+
+model LeaseSignature {
+  id        String   @id @default(cuid())
+  leaseId   String
+  lease     Lease    @relation(fields: [leaseId], references: [id])
+  userId    String
+  user      User     @relation(fields: [userId], references: [id])
+  signedAt  DateTime @default(now())
+  ipAddress String?
+}
+
+model Payment {
+  id        String        @id @default(cuid())
+  leaseId   String
+  lease     Lease         @relation(fields: [leaseId], references: [id])
+  payerId   String
+  payer     User          @relation(fields: [payerId], references: [id])
+  amount    Float
+  type      PaymentType
+  status    PaymentStatus @default(PENDING)
+  stripeId  String?
+  paidAt    DateTime?
+  createdAt DateTime      @default(now())
+}
+
+model MaintenanceTicket {
+  id          String              @id @default(cuid())
+  propertyId  String
+  property    Property            @relation(fields: [propertyId], references: [id])
+  tenantId    String
+  tenant      User                @relation(fields: [tenantId], references: [id])
+  title       String
+  description String
+  category    String
+  priority    MaintenancePriority @default(MEDIUM)
+  status      MaintenanceStatus   @default(OPEN)
+  images      String[]
+  createdAt   DateTime            @default(now())
+  updatedAt   DateTime            @updatedAt
+}
+
+model Tour {
+  id          String     @id @default(cuid())
+  listingId   String
+  listing     Listing    @relation(fields: [listingId], references: [id])
+  requesterId String
+  requester   User       @relation("TourRequester", fields: [requesterId], references: [id])
+  landlordId  String
+  landlord    User       @relation("TourLandlord", fields: [landlordId], references: [id])
+  scheduledAt DateTime
+  type        TourType   @default(IN_PERSON)
+  status      TourStatus @default(REQUESTED)
+  notes       String?
+  createdAt   DateTime   @default(now())
+  updatedAt   DateTime   @updatedAt
+}
+
+model Conversation {
+  id            String    @id @default(cuid())
+  listingId     String
+  listing       Listing   @relation(fields: [listingId], references: [id])
+  renterId      String
+  renter        User      @relation(fields: [renterId], references: [id])
+  lastMessageAt DateTime  @default(now())
+  createdAt     DateTime  @default(now())
+
+  messages Message[]
+}
+
+model Message {
+  id             String       @id @default(cuid())
+  conversationId String
+  conversation   Conversation @relation(fields: [conversationId], references: [id])
+  senderId       String
+  sender         User         @relation(fields: [senderId], references: [id])
+  content        String
+  readAt         DateTime?
+  createdAt      DateTime     @default(now())
+}
+
+model Notification {
+  id        String    @id @default(cuid())
+  userId    String
+  user      User      @relation(fields: [userId], references: [id])
+  type      String
+  title     String
+  body      String
+  link      String?
+  readAt    DateTime?
+  createdAt DateTime  @default(now())
+}
+
+model SavedListing {
+  id        String   @id @default(cuid())
+  userId    String
+  user      User     @relation(fields: [userId], references: [id])
+  listingId String
+  listing   Listing  @relation(fields: [listingId], references: [id])
+  createdAt DateTime @default(now())
+
+  @@unique([userId, listingId])
+}
+
+model Review {
+  id        String   @id @default(cuid())
+  listingId String
+  listing   Listing  @relation(fields: [listingId], references: [id])
+  authorId  String
+  author    User     @relation(fields: [authorId], references: [id])
+  rating    Int
+  comment   String?
+  createdAt DateTime @default(now())
+}
